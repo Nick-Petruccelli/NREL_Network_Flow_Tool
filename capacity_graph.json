@@ -1,10 +1,27 @@
 {
-    "source1": [["substation1", 10], ["substation2", 10]],
-    "source2": [["substation1", 8], ["substation2", 10]],
-    "source3": [["substation2", 10], ["substation3", 8]],
-    "substation1": [["sink1", 5], ["sink2", 5], ["sink3", 5]],
-    "substation2": [["sink2", 5], ["sink4", 5]],
-    "substation3": [["sink1", 5], ["sink3", 5], ["sink4", 5]],
+    "source1": {"edges": [
+        {"dest": "substation1", "cap": 10, "flow": 0},
+        {"dest": "substation2", "cap": 10, "flow": 0}
+        ], "produced": 20},
+    "source2": {"edges": [
+        {"dest": "substation1", "cap": 8, "flow": 0},
+        {"dest": "substation2", "cap": 10, "flow": 0}
+        ], "produced": 18},
+    "source3": {"edges": [
+        {"dest": "substation2", "cap": 10, "flow": 0},
+        {"dest": "substation3", "cap": 8, "flow": 0}
+        ], "produced": 18},
+    "substation1": [
+        {"dest": "sink1", "cap": 5, "flow": 0},
+        {"dest": "sink2", "cap": 5, "flow": 0},
+        {"dest": "sink3", "cap": 5, "flow": 0}],
+    "substation2": [
+        {"dest": "sink2", "cap": 5, "flow": 0},
+        {"dest": "sink4", "cap": 5, "flow": 0}],
+    "substation3": [
+        {"dest": "sink1", "cap": 5, "flow": 0},
+        {"dest": "sink3", "cap": 5, "flow": 0},
+        {"dest": "sink4", "cap": 5, "flow": 0}],
     "sink1": 8,
     "sink2": 5,
     "sink3": 10,

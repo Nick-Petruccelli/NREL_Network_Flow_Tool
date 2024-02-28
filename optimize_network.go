@@ -11,8 +11,13 @@ func main()  {
 	res := json_to_map("capacity_graph.json")
 
 	fmt.Println(res["source1"])
+	s1 := res["source1"].(map[string]interface{})
+	fmt.Println(s1)
+	prod1 := s1["produced"]
+	fmt.Println(prod1)
 
-	cap_to_aug_flow(res)
+	aug_flow := cap_to_aug_flow(res)
+	fmt.Println(aug_flow)
 }
 
 type edge struct {
@@ -45,7 +50,6 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 	sinks := make(map[string]bool)
 
 	for node := range cap_graph {
-		fmt.Println(node)
 		if len(node) >=6 && node[0:6] == "source" {
 			sources[node] = true
 		}
@@ -54,11 +58,28 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 		}
 	}
 
-	fmt.Println(sources)
-	fmt.Println(sinks)
+	aug_flow := make(map[string][]edge)
+	
+	for source := range sources {
+		// Connect sources to main source
+		src := cap_graph[source].(map[string]interface{})
+		cap := int(src["produced"].(float64))
+		edg := edge{dest: source, cap: cap, flow: 0}
+		aug_flow["main_source"] = append(aug_flow["main_source"], edg)
 
-	var aug_flow map[string][]edge
-
+		// Connect sources to substations
+		edges := src["edges"].([]interface{})
+		fmt.Println(edges)
+		for i := range edges {
+			eg := edges[i].(map[string]interface{})
+			dest := string(eg["dest"].(string))
+			cap = int(eg["cap"].(float64))
+			flow := int(eg["flow"].(float64))
+			edg = edge{dest: dest, cap: cap, flow: flow}
+			aug_flow[source] = append(aug_flow[source], edg)
+		}
+	}
+	
 
 	return aug_flow
 }
