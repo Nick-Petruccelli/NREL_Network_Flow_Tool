@@ -18,12 +18,37 @@ func main()  {
 		fmt.Println(node)
 		fmt.Println(aug_flow[node])
 	}
+
+	fmt.Println("DFS Path")
+	fmt.Println("--------------------------")
+	path := []string{}
+	fmt.Println(dfs(aug_flow, "main_source", "main_sink", path))
 }
 
 type edge struct {
 	dest string
 	cap int
 	flow int
+}
+
+func dfs(graph map[string][]edge, cur string, end string, path []string) []string{
+	if len(graph[cur]) == 0 {
+		path = nil
+		return path
+	}
+	path = append(path, cur)
+	for i := range graph[cur] {
+		edg := graph[cur][i]
+		if edg.dest == end {
+			path = append(path, edg.dest)
+			return path
+		}
+		out := dfs(graph, edg.dest, end, path)
+		if out != nil {
+			return out
+		}
+	}
+	return nil
 }
 
 func json_to_map(file_name string) map[string]interface{} {
@@ -89,7 +114,6 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 	// Add substations to graph
 	for substation := range substations {
 		edges := cap_graph[substation].([]interface{})
-		fmt.Println(edges)
 		for i := range edges {
 			eg := edges[i].(map[string]interface{})
 			dest := string(eg["dest"].(string))
