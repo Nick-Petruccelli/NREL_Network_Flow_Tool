@@ -5,6 +5,7 @@ import(
 	"os"
 	"io/ioutil"
 	"encoding/json"
+	"sort"
 )
 
 func main()  {
@@ -12,34 +13,59 @@ func main()  {
 
 	aug_flow := cap_to_aug_flow(res)
 
+	node_keys := []string{}
+	for key := range aug_flow {
+		node_keys = append(node_keys, key)
+	}
+	sort.Slice(node_keys, func(i, j int) bool {
+		return node_keys[i] > node_keys[j]
+	})
+	
 	fmt.Println("Augmented Flow Graph Init")
 	fmt.Println("--------------------------")
-	for node := range aug_flow {
+	for _ , node := range node_keys {
 		fmt.Println(node)
 		fmt.Println(aug_flow[node])
 	}
-
-	fmt.Println("Final Flow Graph")
+	
+	
+	fmt.Println("\nFinal Flow Graph")
 	fmt.Println("--------------------------")
 	final_flow := solve(aug_flow)
-	for node := range final_flow {
+	for _ , node := range node_keys {
 		fmt.Println(node)
 		fmt.Println(final_flow[node])
 	}
+	
 }
 
 type edge struct {
 	dest string
 	cap int
 	flow int
+	residual bool
 }
 
 func dfs(graph map[string][]edge, cur string, end string, path []string) []string{
 	path = append(path, cur)
 	for i := range graph[cur] {
 		edg := graph[cur][i]
+		visited := false
+		for _ , node := range path {
+			if edg.dest == node {
+				visited = true
+				break
+			}
+		}
+		if visited {
+			continue
+		}
+		
 		if edg.flow >= edg.cap {
 			continue
+		}
+		if edg.dest == "main_source" {
+			return nil
 		}
 		if edg.dest == end {
 			path = append(path, end)
@@ -76,10 +102,20 @@ func solve(init_graph map[string][]edge) map[string][]edge {
 				min_dif = dif
 			}
 		}
-		for i := 0; i < len(path); i++ {
+		for i := 0; i < len(path) - 1; i++ {
 			for e := range aug_flow[path[i]] {
-				if aug_flow[path[i]][e].dest == path[i + 1] {
-					aug_flow[path[i]][e].flow += min_dif
+				edg := &aug_flow[path[i]][e]
+				if edg.dest == path[i + 1] {
+					if edg.residual {
+						edg.cap -= min_dif
+						break
+					}
+					edg.flow += min_dif
+					for r := range aug_flow[edg.dest] {
+						if path[i] == aug_flow[edg.dest][r].dest {
+							aug_flow[edg.dest][r].cap += min_dif
+						}
+					}
 					break
 				}
 			}
@@ -145,8 +181,10 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 			dest := string(eg["dest"].(string))
 			cap = int(eg["cap"].(float64))
 			flow := int(eg["flow"].(float64))
-			edg = edge{dest: dest, cap: cap, flow: flow}
+			edg = edge{dest: dest, cap: cap, flow: flow, residual: false}
+			resid := edge{dest: source, cap: 0, flow: 0, residual: true}
 			aug_flow[source] = append(aug_flow[source], edg)
+			aug_flow[dest] = append(aug_flow[dest], resid)
 		}
 	}
 	
@@ -158,16 +196,21 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 			dest := string(eg["dest"].(string))
 			cap := int(eg["cap"].(float64))
 			flow := int(eg["flow"].(float64))
-			edg := edge{dest: dest, cap: cap, flow: flow}
+			edg := edge{dest: dest, cap: cap, flow: flow, residual: false}
+			resid := edge{dest: substation, cap: 0, flow: 0, residual: true}
 			aug_flow[substation] = append(aug_flow[substation], edg)
+			aug_flow[dest] = append(aug_flow[dest], resid)
 		}
 	}
+
 
 	// Connect sinks to main sink
 	for sink := range sinks {
 		cap := int(cap_graph[sink].(float64))
-		edge := edge{dest: "main_sink", cap: cap, flow: 0}
-		aug_flow[sink] = append(aug_flow["main_sink"], edge)
+		edg := edge{dest: "main_sink", cap: cap, flow: 0, residual: false}
+		resid := edge{dest: sink, cap: 0, flow: 0, residual: true}
+		aug_flow[sink] = append(aug_flow[sink], edg)
+		aug_flow["main_sink"] = append(aug_flow["main_sink"], resid)
 	}
 
 	return aug_flow
