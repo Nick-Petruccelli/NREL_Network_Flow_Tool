@@ -19,10 +19,13 @@ func main()  {
 		fmt.Println(aug_flow[node])
 	}
 
-	fmt.Println("DFS Path")
+	fmt.Println("Final Flow Graph")
 	fmt.Println("--------------------------")
-	path := []string{}
-	fmt.Println(dfs(aug_flow, "main_source", "main_sink", path))
+	final_flow := solve(aug_flow)
+	for node := range final_flow {
+		fmt.Println(node)
+		fmt.Println(final_flow[node])
+	}
 }
 
 type edge struct {
@@ -32,15 +35,14 @@ type edge struct {
 }
 
 func dfs(graph map[string][]edge, cur string, end string, path []string) []string{
-	if len(graph[cur]) == 0 {
-		path = nil
-		return path
-	}
 	path = append(path, cur)
 	for i := range graph[cur] {
 		edg := graph[cur][i]
+		if edg.flow >= edg.cap {
+			continue
+		}
 		if edg.dest == end {
-			path = append(path, edg.dest)
+			path = append(path, end)
 			return path
 		}
 		out := dfs(graph, edg.dest, end, path)
@@ -49,6 +51,43 @@ func dfs(graph map[string][]edge, cur string, end string, path []string) []strin
 		}
 	}
 	return nil
+}
+
+func solve(init_graph map[string][]edge) map[string][]edge {
+	path := []string{}
+	aug_flow := init_graph
+	
+	for {
+		path = dfs(aug_flow, "main_source", "main_sink", path)
+		if path == nil {
+			break
+		}
+		min_dif := 1000000000
+		for i := 0; i < len(path) - 1; i++ {
+			edg := edge{dest: "temp", cap: 0, flow: 0}
+			for e := range aug_flow[path[i]] {
+				if aug_flow[path[i]][e].dest == path[i + 1] {
+					edg = aug_flow[path[i]][e]
+					break
+				}
+			}
+			dif := edg.cap - edg.flow
+			if min_dif > dif {
+				min_dif = dif
+			}
+		}
+		for i := 0; i < len(path); i++ {
+			for e := range aug_flow[path[i]] {
+				if aug_flow[path[i]][e].dest == path[i + 1] {
+					aug_flow[path[i]][e].flow += min_dif
+					break
+				}
+			}
+		}
+		path = nil
+	}
+
+	return aug_flow
 }
 
 func json_to_map(file_name string) map[string]interface{} {
