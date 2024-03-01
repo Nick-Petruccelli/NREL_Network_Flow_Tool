@@ -12,31 +12,12 @@ func main()  {
 	res := json_to_map("capacity_graph.json")
 
 	aug_flow := cap_to_aug_flow(res)
-
-	node_keys := []string{}
-	for key := range aug_flow {
-		node_keys = append(node_keys, key)
-	}
-	sort.Slice(node_keys, func(i, j int) bool {
-		return node_keys[i] > node_keys[j]
-	})
-	
-	fmt.Println("Augmented Flow Graph Init")
-	fmt.Println("--------------------------")
-	for _ , node := range node_keys {
-		fmt.Println(node)
-		fmt.Println(aug_flow[node])
-	}
-	
+	solved := solve(aug_flow)
+	final_flow := aug_to_final(solved)	
 	
 	fmt.Println("\nFinal Flow Graph")
 	fmt.Println("--------------------------")
-	final_flow := solve(aug_flow)
-	for _ , node := range node_keys {
-		fmt.Println(node)
-		fmt.Println(final_flow[node])
-	}
-	
+	display_final_flow(final_flow)
 }
 
 type edge struct {
@@ -108,6 +89,11 @@ func solve(init_graph map[string][]edge) map[string][]edge {
 				if edg.dest == path[i + 1] {
 					if edg.residual {
 						edg.cap -= min_dif
+						for d := range aug_flow[edg.dest] {
+							if path[i] == aug_flow[edg.dest][d].dest {
+								aug_flow[edg.dest][d].flow -= min_dif
+							}
+						}
 						break
 					}
 					edg.flow += min_dif
@@ -157,7 +143,7 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 		if len(node) >= 10 && node[0:10] == "substation"{
 			substations[node] = true
 		}
-		if len(node) >=4 &&node[0:4] == "sink"{
+		if len(node) >=4 && node[0:4] == "sink"{
 			sinks[node] = true
 		}
 	}
@@ -214,4 +200,58 @@ func cap_to_aug_flow(cap_graph map[string]interface{}) map[string][]edge {
 	}
 
 	return aug_flow
+}
+
+
+func aug_to_final(aug_flow map[string][]edge) map[string][]edge {
+	final_flow := make(map[string][]edge)
+	for node, edgs := range aug_flow {
+		for _ , edg := range edgs {
+			if edg.residual {
+				continue
+			}
+			final_flow[node] = append(final_flow[node], edg)
+		}
+	}
+	return final_flow
+}
+
+func display_final_flow(final_flow map[string][]edge) {
+	sorted_nodes := []string{"main_source"}
+	sources := []string{}
+	substations := []string{}
+	sinks := []string{}
+
+	for node, _ := range final_flow {
+		if len(node) >=6 && node[0:6] == "source" {
+			sources = append(sources, node)
+		}
+		if len(node) >= 10 && node[0:10] == "substation"{
+			substations = append(substations, node)
+		}
+		if len(node) >=4 &&node[0:4] == "sink"{
+			sinks = append(sinks, node)
+		}
+	}
+
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i] > sources[j]
+	})
+	sort.Slice(substations, func(i, j int) bool {
+		return substations[i] > substations[j]
+	})
+	sort.Slice(sinks, func(i, j int) bool {
+		return sinks[i] > sinks[j]
+	})
+
+	sorted_nodes = append(sorted_nodes, sources...)
+	sorted_nodes = append(sorted_nodes, substations...)
+	sorted_nodes = append(sorted_nodes, sinks...)
+
+	for _ , node := range sorted_nodes {
+		fmt.Printf("\n%s:\n", node)
+		for _ , edg := range final_flow[node] {
+			fmt.Printf("Edge To: %s Flow: %d\n", edg.dest, edg.flow)
+		}
+	}
 }
